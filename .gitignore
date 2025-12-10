@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Docker
+docker-compose.override.yml
+
+# Data & Indices
+sample_data/
+indexing_storage/
+outputs/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.idea/
+frontend/.vscode/
+
+# IDEs
+.idea/
+.vscode/
+
+# Temp
+*.log
