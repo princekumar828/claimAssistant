@@ -40,7 +40,11 @@ const Chat = () => {
                 metadata: data.metadata
             }]);
         } catch (err) {
-            setMessages(prev => [...prev, { role: 'error', content: 'Something went wrong. Please check backend.' }]);
+            console.error(err);
+            setMessages(prev => [...prev, {
+                role: 'error',
+                content: `Error: ${err.message || 'Something went wrong'}. Check console/backend.`
+            }]);
         } finally {
             setLoading(false);
         }
@@ -77,7 +81,7 @@ const Chat = () => {
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                         <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user' ? 'bg-blue-600 text-white' :
-                                msg.role === 'error' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'
+                            msg.role === 'error' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-800'
                             }`}>
                             {msg.content}
                         </div>

@@ -96,6 +96,50 @@ def ingest_data():
         "duration_seconds": time.time() - start_time
     }
 
+# Helper for extracting filters
+def extract_filters(query: str, current_llm) -> dict:
+    """
+    Uses the LLM to extract structured filters from the natural language query.
+    Returns a dict like: {'start_date': '2023-01-01', 'status': 'Denied'}
+    """
+    # Simple prompt to extract JSON
+    prompt = (
+        "Extract metadata filters from the user query. \n"
+        "Return ONLY a valid JSON object with keys: 'start_date' (YYYY-MM-DD), 'end_date' (YYYY-MM-DD), "
+        "'status' (Approved, Denied, Pending), 'specialty', 'doctor_name', 'claim_id'. \n"
+        "Date logic: 'last quarter' means previous 3 month block. 'last year' means 2023 (if current is 2024).\n"
+        "If a filter is not present, omit the key.\n"
+        "Example: 'Show me denied claims' -> {\"status\": \"Denied\"}\n"
+        f"Query: {query}\n"
+        "JSON:"
+    )
+    
+    try:
+        # Mock LLM doesn't support this well, so we hardcode a basic parser for 'mock' mode or fallback
+        if settings.LLM_TYPE == "mock":
+            filters = {}
+            if "denied" in query.lower(): filters["status"] = "Denied"
+            if "approved" in query.lower(): filters["status"] = "Approved"
+            return filters
+            
+        # Real LLM extraction
+        response_text = current_llm.generate_answer(prompt, []) # Pass empty context
+        
+        # Clean markdown code blocks if present
+        import json
+        import re
+        
+        cleaned = re.sub(r"```json|```", "", response_text).strip()
+        start = cleaned.find("{")
+        end = cleaned.rfind("}") + 1
+        if start != -1 and end != -1:
+             filters = json.loads(cleaned[start:end])
+             return filters
+    except Exception as e:
+        print(f"Filter extraction failed: {e}")
+        
+    return {}
+
 @app.post("/query", response_model=QueryResponse)
 def query_endpoint(request: QueryRequest):
     if not vector_store.index or vector_store.index.ntotal == 0:
@@ -103,8 +147,14 @@ def query_endpoint(request: QueryRequest):
         
     start_time = time.time()
     
-    # Retrieval
-    results = vector_store.search(request.query, k=request.k)
+    current_llm = get_app_llm()
+    
+    # 1. Extract Filters
+    filters = extract_filters(request.query, current_llm)
+    print(f"Extracted Filters: {filters}")
+    
+    # 2. Retrieval with Filters
+    results = vector_store.search(request.query, k=request.k, filters=filters)
     
     # Format sources for LLM
     context = []
@@ -120,8 +170,7 @@ def query_endpoint(request: QueryRequest):
             full_metadata=doc['metadata']
         ))
         
-    # Generation
-    current_llm = get_app_llm()
+    # 3. Generation
     answer = current_llm.generate_answer(request.query, context)
     
     return {
@@ -130,6 +179,7 @@ def query_endpoint(request: QueryRequest):
         "metadata": {
             "processing_latency": time.time() - start_time,
             "embedding_model": settings.EMBEDDING_MODEL,
-            "llm_type": settings.LLM_TYPE
+            "llm_type": settings.LLM_TYPE,
+            "applied_filters": filters
         }
     }

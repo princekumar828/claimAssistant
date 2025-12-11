@@ -9,7 +9,7 @@ services:
       - ./sample_data:/app/sample_data
       - ./indexing_storage:/app/indexing_storage
     environment:
-      - LLM_TYPE=gemini
+      - LLM_TYPE=${LLM_TYPE:-mock}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - EMBEDDING_MODEL=all-MiniLM-L6-v2
 
