@@ -1,7 +1,7 @@
 # RAG-Powered Claims Query Assistant
 
 A professional, Dockerized RAG (Retrieval-Augmented Generation) system for querying insurance claims data using Natural Language. 
-It combines **Vector Search** (semantic understanding) with **Metadata Filtering** (structured queries) to answer complex questions like *"Show me denied claims for diabetes patients last quarter"*.
+It combines **Vector Search** (semantic understanding) with **Metadata Filtering** (structured queries) to answer complex questions like *"Show me denied claims for diabetes patients last quarter"*. need improvements
 
 ## 🚀 Features
 
